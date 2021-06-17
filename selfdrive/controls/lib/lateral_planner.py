@@ -16,7 +16,7 @@ LaneChangeDirection = log.LateralPlan.LaneChangeDirection
 
 LOG_MPC = os.environ.get('LOG_MPC', False)
 
-LANE_CHANGE_SPEED_MIN = 30 * CV.MPH_TO_MS
+LANE_CHANGE_SPEED_MIN = 8.6 * CV.MPH_TO_MS
 LANE_CHANGE_TIME_MAX = 10.
 # this corresponds to 80deg/s and 20deg/s steering angle in a toyota corolla
 MAX_CURVATURE_RATES = [0.03762194918267951, 0.003441203371932992]
@@ -70,7 +70,7 @@ class LateralPlanner():
     # dp
     self.dragon_auto_lc_allowed = False
     self.dragon_auto_lc_timer = None
-    self.dragon_auto_lc_delay = 2.
+    self.dragon_auto_lc_delay = 0.5
     self.dp_continuous_auto_lc = False
     self.dp_did_auto_lc = False
 
