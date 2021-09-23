@@ -155,7 +155,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     timebombBypassing @112;
     timebombBypassed @113;
     mapdAlert @114;
-    
+
     #mapd
     speedLimitActive @115;
     speedLimitValueChange @116;
@@ -221,11 +221,9 @@ struct CarState {
 
   #Kegman 3Bar Distance Profile
   readdistancelines @42 :Float32;
-  lkMode @43 :Bool;
-  engineRPM @44 :Float32;
 
   # Autohold for GM
-  autoHoldActivated @45 :Bool;
+  autoHoldActivated @43 :Bool;
 
   # which packets this state came from
   canMonoTimes @12: List(UInt64);

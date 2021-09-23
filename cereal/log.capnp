@@ -569,7 +569,7 @@ struct ControlsState @0x97ff69c53601abf1 {
   # Road Speed Limiter
   roadLimitSpeed @64 :Int32;
   roadLimitSpeedLeftDist @65 :Int32;
-  
+
   # Ui display
   steerRatio @60 :Float32;
   steerRateCost @61 :Float32;
@@ -929,9 +929,9 @@ struct LateralPlan @0xe1e9318e2ae8b51e {
   dpALCAllowed @29 :Bool;
 
   # Lateral Ui display
-  steerRatio @30 :Float32;
-  steerRateCost @31 :Float32;
-  steerActuatorDelay @32 :Float32;
+  steerRatio @32 :Float32;
+  steerRateCost @33 :Float32;
+  steerActuatorDelay @34 :Float32;
 
   enum Desire {
     none @0;
