@@ -163,9 +163,11 @@ class Controls:
     self.v_target = 0.0
     self.a_target = 0.0
 
-    self.led_state = False
     self.v_cruise_kph_limit = 0
     self.curve_speed_ms = 255.
+#    self.wide_camera = TICI and params.get_bool('EnableWideCamera')
+    self.led_state = False
+    self.led_state_prev = False
 
     # TODO: no longer necessary, aside from process replay
     self.sm['liveParameters'].valid = True
