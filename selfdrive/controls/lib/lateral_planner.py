@@ -1,3 +1,4 @@
+import os
 import math
 import numpy as np
 from common.params import Params
@@ -14,6 +15,8 @@ from cereal import log
 
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
+
+LOG_MPC = os.environ.get('LOG_MPC', False)
 
 LANE_CHANGE_SPEED_MIN = 8.6 * CV.KPH_TO_MS
 LANE_CHANGE_TIME_MAX = 10.
@@ -62,6 +65,7 @@ class LateralPlanner():
     self.plan_yaw = np.zeros((TRAJECTORY_SIZE,))
     self.t_idxs = np.arange(TRAJECTORY_SIZE)
     self.y_pts = np.zeros(TRAJECTORY_SIZE)
+    self.steerRatio = 0.0
     self.d_path_w_lines_xyz = np.zeros((TRAJECTORY_SIZE, 3))
 
     # dp
@@ -221,7 +225,7 @@ class LateralPlanner():
     self.d_path_w_lines_xyz = self.LP.get_d_path(v_ego, self.t_idxs, self.path_xyz)
     if self.use_lanelines:
       d_path_xyz = self.d_path_w_lines_xyz
-      self.libmpc.set_weights(MPC_COST_LAT.PATH, MPC_COST_LAT.HEADING, CP.steerRateCost)
+      self.libmpc.set_weights(MPC_COST_LAT.PATH, MPC_COST_LAT.HEADING, ntune_common_get('steerRateCost'))
       self.laneless_mode_status = False
     elif self.laneless_mode == 0:
       d_path_xyz = self.LP.get_d_path(v_ego, self.t_idxs, self.path_xyz)
@@ -323,3 +327,12 @@ class LateralPlanner():
     plan_send.lateralPlan.dpLaneLessModeStatus = bool(self.laneless_mode_status)
 
     pm.send('lateralPlan', plan_send)
+
+    if LOG_MPC:
+      dat = messaging.new_message('liveMpc')
+      dat.liveMpc.x = list(self.mpc_solution.x)
+      dat.liveMpc.y = list(self.mpc_solution.y)
+      dat.liveMpc.psi = list(self.mpc_solution.psi)
+      dat.liveMpc.curvature = list(self.mpc_solution.curvature)
+      dat.liveMpc.cost = self.mpc_solution.cost
+      pm.send('liveMpc', dat)

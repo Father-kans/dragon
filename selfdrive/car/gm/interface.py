@@ -161,25 +161,16 @@ class CarInterface(CarInterfaceBase):
   # returns a car.CarState
   def update(self, c, can_strings, dragonconf):
     self.cp.update_strings(can_strings)
-    # bellow two lines for Brake Light
-    self.cp_chassis.update_strings(can_strings)
-    ret = self.CS.update(self.cp, self.cp_chassis)
+    ret = self.CS.update(self.cp)
 
-    # dp
-    self.dragonconf = dragonconf
-    ret.cruiseState.enabled = common_interface_atl(ret, dragonconf.dpAtl)
     #brake autohold
     if not self.CS.autoholdBrakeStart and self.CS.brakePressVal > 40.0:
       self.CS.autoholdBrakeStart = True
 
-    cruiseEnabled = self.CS.pcm_acc_status != AccState.OFF
-    ret.cruiseState.enabled = cruiseEnabled
-#    ret.cruiseGap = self.CS.follow_level
-    ret.readdistancelines = self.CS.follow_level
+    self.dragonconf = dragonconf
+    ret.cruiseState.enabled = common_interface_atl(ret, dragonconf.dpAtl)
     ret.canValid = self.cp.can_valid
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
-    #for RPM
-    ret.engineRPM = self.CS.engineRPM
 
     buttonEvents = []
 
@@ -206,15 +197,6 @@ class CarInterface(CarInterfaceBase):
       buttonEvents.append(be)
 
     ret.buttonEvents = buttonEvents
-
-    # 3bar
-    if cruiseEnabled and self.CS.lka_button and self.CS.lka_button != self.CS.prev_lka_button:
-      self.CS.lkMode = not self.CS.lkMode
-
-    if self.CS.distance_button and self.CS.distance_button != self.CS.prev_distance_button:
-       self.CS.follow_level -= 1
-       if self.CS.follow_level < 1:
-         self.CS.follow_level = 3
 
     events = self.create_common_events(ret, pcm_enable=False)
 

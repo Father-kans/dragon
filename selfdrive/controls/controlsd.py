@@ -29,8 +29,7 @@ from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.locationd.calibrationd import Calibration
 from selfdrive.hardware import HARDWARE, TICI, EON, JETSON
 from selfdrive.manager.process_config import managed_processes
-#from selfdrive.ntune import ntune_common_get, ntune_common_enabled, ntune_scc_get
-#from selfdrive.road_speed_limiter import road_speed_limiter_get_max_speed
+from selfdrive.ntune import ntune_common_get, ntune_common_enabled
 
 LDW_MIN_SPEED = 31 * CV.MPH_TO_MS
 LANE_DEPARTURE_THRESHOLD = 0.1
@@ -77,7 +76,7 @@ class Controls:
 
     self.sm = sm
     if self.sm is None:
-      ignore = ['driverCameraState', 'managerState'] if SIMULATION else None
+      ignore = ['ubloxRaw', 'driverCameraState', 'managerState'] if SIMULATION else ['ubloxRaw']
       if self.dp_jetson:
         ignore = ['driverCameraState', 'driverMonitoringState'] if ignore is None else ignore + ['driverCameraState', 'driverMonitoringState']
       self.sm = messaging.SubMaster(['deviceState', 'pandaState', 'modelV2', 'liveCalibration',
@@ -94,8 +93,8 @@ class Controls:
       self.log_sock = messaging.sub_sock('androidLog')
 
     # wait for one pandaState and one CAN packet
-    hw_type = messaging.recv_one(self.sm.sock['pandaState']).pandaState.pandaType
-    has_relay = hw_type in [PandaType.blackPanda, PandaType.uno, PandaType.dos]
+    self.hw_type = messaging.recv_one(self.sm.sock['pandaState']).pandaState.pandaType
+    has_relay = self.hw_type in [PandaType.blackPanda, PandaType.uno, PandaType.dos]
     print("Waiting for CAN messages...")
     get_one_can(self.can_sock)
 
@@ -164,8 +163,7 @@ class Controls:
     self.logged_comm_issue = False
     self.v_target = 0.0
     self.a_target = 0.0
-    self.road_limit_speed = 0
-    self.road_limit_left_dist = 0
+
     self.v_cruise_kph_limit = 0
     self.curve_speed_ms = 255.
 #    self.wide_camera = TICI and params.get_bool('EnableWideCamera')
@@ -642,7 +640,6 @@ class Controls:
       l_lane_close = left_lane_visible and (self.sm['modelV2'].laneLines[1].y[0] > -(1.08 + CAMERA_OFFSET))
       r_lane_close = right_lane_visible and (self.sm['modelV2'].laneLines[2].y[0] < (1.08 - CAMERA_OFFSET))
 
-
       CC.hudControl.leftLaneDepart = bool(l_lane_change_prob > LANE_DEPARTURE_THRESHOLD and l_lane_close)
       CC.hudControl.rightLaneDepart = bool(r_lane_change_prob > LANE_DEPARTURE_THRESHOLD and r_lane_close)
 
@@ -697,8 +694,6 @@ class Controls:
     controlsState.startMonoTime = int(start_time * 1e9)
     controlsState.forceDecel = bool(force_decel)
     controlsState.canErrorCounter = self.can_error_counter
-    controlsState.roadLimitSpeed = self.road_limit_speed
-    controlsState.roadLimitSpeedLeftDist = self.road_limit_left_dist
 
     # dp - RX Patch: https://github.com/LexusRXopenpilotUG/openpilot
     if self.dp_lexus_rx_rpm_fix:

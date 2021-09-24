@@ -118,8 +118,6 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     slowingDownSpeed @119;
     slowingDownSpeedSound @120;
 
-    #autoResume
-    accBrakeHold @121;
 
     highCpuUsage @105;
 
@@ -175,6 +173,7 @@ struct CarState {
   vEgoRaw @17 :Float32;     # unfiltered speed from CAN sensors
   yawRate @22 :Float32;     # best estimate of yaw rate
   standstill @18 :Bool;
+  brakeLights @19 :Bool;
   wheelSpeeds @2 :WheelSpeeds;
 
   # gas pedal, 0.0-1.0
@@ -221,10 +220,10 @@ struct CarState {
 
   #Kegman 3Bar Distance Profile
   readdistancelines @42 :Float32;
-  lkMode @43 :Bool;
-  engineRPM @44 :Float32;
+
   # Autohold for GM
-  autoHoldActivated @45 :Bool;
+  autoHoldActivated @43 :Bool;
+
   # which packets this state came from
   canMonoTimes @12: List(UInt64);
 
@@ -292,7 +291,6 @@ struct CarState {
   }
 
   errorsDEPRECATED @0 :List(CarEvent.EventName);
-  brakeLights @19 :Bool;
 }
 
 # ******* radar state @ 20hz *******

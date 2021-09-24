@@ -3,11 +3,6 @@
 if [ ! -f "./installer/boot_finish" ]; then
   echo "Installing fonts..."
   mount -o rw,remount /system
-  cp -f ./installer/fonts/NanumGothic* /system/fonts/
-  cp -f ./installer/fonts/opensans_* ./selfdrive/assets/fonts/
-  cp -f ./installer/fonts/fonts.xml /system/etc/fonts.xml
-  chmod 644 /system/etc/fonts.xml
-  chmod 644 /system/fonts/NanumGothic*
   cp -f ./installer/bootanimation.zip /system/media/
   cp -f ./installer/spinner ./selfdrive/ui/qt/
   sed -i 's/self._AWARENESS_TIME = 35/self._AWARENESS_TIME = 10800/' ./selfdrive/monitoring/driver_monitor.py
@@ -98,6 +93,11 @@ fi
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 function two_init {
+  if [ -f "/sdcard/dp_patcher.py" ]; then
+    /data/data/com.termux/files/usr/bin/python /sdcard/dp_patcher.py
+  fi
+  /data/data/com.termux/files/usr/bin/python /data/openpilot/scripts/installers/font_installer.py
+  /data/data/com.termux/files/usr/bin/python /data/openpilot/scripts/installers/sshkey_installer.py
 
   # set IO scheduler
   setprop sys.io.scheduler noop
@@ -194,8 +194,6 @@ function two_init {
 
       "$DIR/installer/updater/updater" "file://$DIR/installer/updater/update.json"
     fi
-  else
-    echo -n 0 > /data/params/d/DisableUpdates
   fi
 
   # One-time fix for a subset of OP3T with gyro orientation offsets.
@@ -287,6 +285,9 @@ function launch {
   ln -sfn $(pwd) /data/pythonpath
   export PYTHONPATH="$PWD:$PWD/pyextra"
 
+  # dp - ignore chmod changes
+  git -C $DIR config core.fileMode false
+
   # hardware specific init
   if [ -f /EON ]; then
     two_init
@@ -299,7 +300,21 @@ function launch {
 
   # start manager
   cd selfdrive/manager
-  ./build.py && ./manager.py
+  if [ -f /EON ]; then
+    if [ ! -f "/system/comma/usr/lib/libgfortran.so.5.0.0" ]; then
+      mount -o remount,rw /system
+      tar -zxvf /data/openpilot/selfdrive/mapd/assets/libgfortran.tar.gz -C /system/comma/usr/lib/
+      mount -o remount,r /system
+    fi
+    if [ ! -d "/system/comma/usr/lib/python3.8/site-packages/opspline" ]; then
+      mount -o remount,rw /system
+      tar -zxvf /data/openpilot/selfdrive/mapd/assets/opspline.tar.gz -C /system/comma/usr/lib/python3.8/site-packages/
+      mount -o remount,r /system
+    fi
+    ./build.py && ./manager.py
+  else
+    ./custom_dep.py && ./build.py && ./manager.py
+  fi
 
   # if broken, keep on screen error
   while true; do sleep 1; done

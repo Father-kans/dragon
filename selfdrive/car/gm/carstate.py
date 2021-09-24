@@ -15,12 +15,8 @@ class CarState(CarStateBase):
     can_define = CANDefine(DBC[CP.carFingerprint]["pt"])
     self.shifter_values = can_define.dv["ECMPRDNL"]["PRNDL"]
 
-#3Bar Distance
-    self.prev_distance_button = 0
     self.prev_lka_button = 0
     self.lka_button = 0
-    self.distance_button = 0
-    self.follow_level = 2
     self.lkMode = True
 #bellow 5lines for Autohold
     self.autoHold = False
@@ -32,20 +28,13 @@ class CarState(CarStateBase):
     self.autoholdBrakeStart = False
     self.brakePressVal = 0
     self.prev_brakePressVal = 0
-#Engine Rpm
-    self.engineRPM = 0
-
-
-  def update(self, pt_cp, ch_cp): # line for brake light
+  def update(self, pt_cp):
     ret = car.CarState.new_message()
 
     self.prev_cruise_buttons = self.cruise_buttons
     self.cruise_buttons = pt_cp.vl["ASCMSteeringButton"]["ACCButtons"]
-# 4 lines for 3Bar Distance
     self.prev_lka_button = self.lka_button
     self.lka_button = pt_cp.vl["ASCMSteeringButton"]["LKAButton"]
-    self.prev_distance_button = self.distance_button
-    self.distance_button = pt_cp.vl["ASCMSteeringButton"]["DistanceButton"]
 
 # 5 lines to match OP's speed to Cluster's
 #    ret.wheelSpeeds.fl = pt_cp.vl["EBCMWheelSpdFront"]["FLWheelSpd"] * CV.KPH_TO_MS
@@ -77,6 +66,11 @@ class CarState(CarStateBase):
     ret.steeringTorque = pt_cp.vl["PSCMStatus"]["LKADriverAppldTrq"]
     ret.steeringPressed = abs(ret.steeringTorque) > STEER_THRESHOLD
 
+    # 0 inactive, 1 active, 2 temporarily limited, 3 failed
+    self.lkas_status = pt_cp.vl["PSCMStatus"]["LKATorqueDeliveredStatus"]
+    ret.steerWarning = self.lkas_status == 2
+    ret.steerError = self.lkas_status == 3
+
     # 1 - open, 0 - closed
     ret.doorOpen = (pt_cp.vl["BCMDoorBeltStatus"]["FrontLeftDoor"] == 1 or
                     pt_cp.vl["BCMDoorBeltStatus"]["FrontRightDoor"] == 1 or
@@ -99,26 +93,16 @@ class CarState(CarStateBase):
     ret.brakePressed = ret.brake > 1e-5
     # Regen braking is braking
     if self.car_fingerprint == CAR.VOLT:
-    # bellow 3 lines for AutoHold
-      # ret.brakePressed = ret.brakePressed or bool(pt_cp.vl["EBCMRegenPaddle"]["RegenPaddle"])
-      self.regenPaddlePressed = bool(pt_cp.vl["EBCMRegenPaddle"]["RegenPaddle"])
-      ret.brakePressed = ret.brakePressed or self.regenPaddlePressed
+      ret.brakePressed = ret.brakePressed or bool(pt_cp.vl["EBCMRegenPaddle"]["RegenPaddle"])
 
     ret.cruiseState.enabled = self.pcm_acc_status != AccState.OFF
     # dp
     ret.cruiseActualEnabled = ret.cruiseState.enabled
     ret.cruiseState.standstill = False
 
-    # 0 - inactive, 1 - active, 2 - temporary limited, 3 - failed
-    self.lkas_status = pt_cp.vl["PSCMStatus"]["LKATorqueDeliveredStatus"]
-    ret.steerWarning = self.lkas_status == 2
-    ret.steerError = self.lkas_status == 3
-
     ret.steeringTorqueEps = pt_cp.vl["PSCMStatus"]["LKATorqueDelivered"]
-    self.engineRPM = pt_cp.vl["ECMEngineStatus"]["EngineRPM"]
-
-# bellow line for Brake Light
-    ret.brakeLights = ch_cp.vl["EBCMFrictionBrakeStatus"]["FrictionBrakePressure"] != 0 or ret.brakePressed
+    # dp - brake lights
+    ret.brakeLights = ret.brakePressed
 
 ## bellow Lines are for Autohold
     if kegman_kans.conf['AutoHold'] == "1":
@@ -130,9 +114,6 @@ class CarState(CarStateBase):
       ret.autoHoldActivated = self.autoHoldActivated
 
     return ret
-# 2 lines for 3 Bar distance
-  def get_follow_level(self):
-    return self.follow_level
 
   @staticmethod
   def get_can_parser(CP):

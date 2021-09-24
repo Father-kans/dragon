@@ -312,7 +312,9 @@ struct DeviceState @0xa4d8b5af2aa492eb {
 
   # power
   batteryPercent @8 :Int16;
+  batteryStatus @9 :Text;
   batteryCurrent @15 :Int32;
+  batteryVoltage @16 :Int32;
   chargingError @17 :Bool;
   chargingDisabled @18 :Bool;
 
@@ -320,10 +322,9 @@ struct DeviceState @0xa4d8b5af2aa492eb {
   cpuTempC @26 :List(Float32);
   gpuTempC @27 :List(Float32);
   memoryTempC @28 :Float32;
+  batteryTempC @29 :Float32;
   ambientTempC @30 :Float32;
   thermalStatus @14 :ThermalStatus;
-
-  wifiIpAddress @35 :Text;
 
   enum ThermalStatus {
     green @0;
@@ -369,9 +370,6 @@ struct DeviceState @0xa4d8b5af2aa492eb {
   batDEPRECATED @6 :UInt32;
   pa0DEPRECATED @21 :UInt16;
   cpuUsagePercentDEPRECATED @20 :Int8;
-  batteryStatusDEPRECATED @9 :Text;
-  batteryVoltageDEPRECATED @16 :Int32;
-  batteryTempCDEPRECATED @29 :Float32;
 }
 
 struct PandaState @0xa7649e2575e4591e {
@@ -1442,18 +1440,6 @@ struct UploaderState {
   lastFilename @6 :Text;
 }
 
-struct RoadLimitSpeed {
-    active @0 :UInt16;
-    roadLimitSpeed @1 :UInt16;
-    isHighway @2 :Bool;
-    camType @3 :UInt16;
-    camLimitSpeedLeftDist @4 :UInt16;
-    camLimitSpeed @5 :UInt16;
-    sectionLimitSpeed @6 :UInt16;
-    sectionLeftDist @7 :UInt16;
-    camSpeedFactor @8 :Float32;
-}
-
 struct Event {
   logMonoTime @0 :UInt64;  # nanoseconds
   valid @67 :Bool = true;
@@ -1510,8 +1496,6 @@ struct Event {
     deviceState @6 :DeviceState;
     logMessage @18 :Text;
 
-    # neokii
-    roadLimitSpeed @82 :RoadLimitSpeed;
 
     # *********** debug ***********
     testJoystick @52 :Joystick;
