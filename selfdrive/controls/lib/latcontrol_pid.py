@@ -1,6 +1,6 @@
 import math
 
-from selfdrive.controls.lib.pid import PIController
+from selfdrive.controls.lib.pid import PIDController
 from selfdrive.controls.lib.drive_helpers import get_steer_max
 from cereal import log
 from selfdrive.kegman_kans_conf import kegman_kans_conf
@@ -10,16 +10,16 @@ class LatControlPID():
   def __init__(self, CP):
     self.kegman_kans = kegman_kans_conf(CP)
     self.deadzone = float(self.kegman_kans.conf['deadzone'])
-    self.pid = PIController((CP.lateralTuning.pid.kpBP, CP.lateralTuning.pid.kpV),
+    self.pid = PIDController((CP.lateralTuning.pid.kpBP, CP.lateralTuning.pid.kpV),
                             (CP.lateralTuning.pid.kiBP, CP.lateralTuning.pid.kiV),
                             (CP.lateralTuning.pid.kdBP, CP.lateralTuning.pid.kdV),
-                            k_f=CP.lateralTuning.pid.kf, pos_limit=1.0, neg_limit=-1.0, 
+                            k_f=CP.lateralTuning.pid.kf, pos_limit=1.0, neg_limit=-1.0,
                             sat_limit=CP.steerLimitTimer, derivative_period=0.1)
     self.mpc_frame = 0
 
   def reset(self):
     self.pid.reset()
-    
+
   def live_tune(self, CP):
     self.mpc_frame += 1
     if self.mpc_frame % 300 == 0:
@@ -31,14 +31,14 @@ class LatControlPID():
         self.steerKdV = [float(self.kegman_kans.conf['Kd'])]
         self.steerKf = float(self.kegman_kans.conf['Kf'])
         self.steerLimitTimer = float(self.kegman_kans.conf['steerLimitTimer'])
-        self.pid = PIController((CP.lateralTuning.pid.kpBP, self.steerKpV),
+        self.pid = PIDController((CP.lateralTuning.pid.kpBP, self.steerKpV),
                             (CP.lateralTuning.pid.kiBP, self.steerKiV),
                             (CP.lateralTuning.pid.kdBP, self.steerKdV),
                             k_f=self.steerKf, pos_limit=1.0, neg_limit=-1.0,
                             sat_limit=self.steerLimitTimer, derivative_period=0.1)
         self.deadzone = float(self.kegman_kans.conf['deadzone'])
-        
-      self.mpc_frame = 0    
+
+      self.mpc_frame = 0
 
   def update(self, active, CS, CP, VM, params, desired_curvature, desired_curvature_rate):
     self.live_tune(CP)

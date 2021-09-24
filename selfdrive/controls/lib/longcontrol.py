@@ -1,8 +1,8 @@
 from cereal import log
 from common.numpy_fast import clip, interp
-from selfdrive.controls.lib.pid import PIController
 from selfdrive.controls.lib.drive_helpers import CONTROL_N
 from selfdrive.modeld.constants import T_IDXS
+from selfdrive.controls.lib.pid import PIDController
 from selfdrive.kegman_kans_conf import kegman_kans_conf
 
 kegman_kans = kegman_kans_conf()
@@ -58,12 +58,12 @@ def long_control_state_trans(active, long_control_state, v_ego, v_target, v_pid,
 class LongControl():
   def __init__(self, CP, compute_gb):
     self.long_control_state = LongCtrlState.off  # initialized to off
-    self.pid = PIController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
-                            (CP.longitudinalTuning.kiBP, CP.longitudinalTuning.kiV),
-                            (CP.longitudinalTuning.kfBP, CP.longitudinalTuning.kfV),
-                            rate=RATE,
-                            sat_limit=0.8,
-                            derivative_period=0.5)
+    self.pid = PIDController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
+                             (CP.longitudinalTuning.kiBP, CP.longitudinalTuning.kiV),
+                             (CP.longitudinalTuning.kdBP, CP.longitudinalTuning.kdV),
+                             rate=RATE,
+                             sat_limit=0.8,
+                             derivative_period=0.5)
     self.v_pid = 0.0
     self.last_output_gb = 0.0
 

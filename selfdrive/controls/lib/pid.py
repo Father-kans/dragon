@@ -1,4 +1,6 @@
 import numpy as np
+from numbers import Number
+
 from common.numpy_fast import clip, interp
 from selfdrive.config import Conversions as CV
 
@@ -11,12 +13,12 @@ def apply_deadzone(error, deadzone):
     error = 0.
   return error
 
-class PIController():
+class PIDController:
   def __init__(self, k_p, k_i, k_d, k_f=1., pos_limit=None, neg_limit=None, rate=100, sat_limit=0.8, derivative_period=1.):
     self._k_p = k_p  # proportional gain
     self._k_i = k_i  # integral gain
     self._k_d = k_d  # derivative gain
-    self.k_f = k_f  # feedforward gain
+    self.k_f = k_f   # feedforward gain
 
     self.pos_limit = pos_limit
     self.neg_limit = neg_limit
@@ -79,9 +81,6 @@ class PIController():
     else:
       i = self.i + error * self.k_i * self.i_rate
       control = self.p + self.f + i + d
-
-      if self.convert is not None:
-        control = self.convert(control, speed=self.speed)
 
       # Update when changing i will move the control away from the limits
       # or when i will move towards the sign of the error
