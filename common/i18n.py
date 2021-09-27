@@ -1,14 +1,16 @@
 import gettext
-from selfdrive.hardware import EON
-from selfdrive.hardware.eon.hardware import getprop
+from common.params import Params
+import os
 
-locale_dir = '/data/openpilot/selfdrive/assets/locales'
-supported_language = ['en-US', 'zh-TW', 'zh-CN', 'ja-JP', 'ko-KR']
-
-def get_locale():
-  return getprop("persist.sys.locale") if EON else 'en-US'
+locale_dir = "/data/openpilot/selfdrive/assets/locales"
+supported_language = ["en-US", "zh-TW", "zh-CN", "ja-JP", "ko-KR"]
 
 def events():
-  i18n = gettext.translation('events', localedir=locale_dir, fallback=True, languages=[get_locale()])
+  if os.path.isfile("/EON"):
+    locale = Params().get("dp_locale", encoding='utf8')
+    locale = locale.strip() if locale is not None else "en-US"
+  else:
+    locale = "en-US"
+  i18n = gettext.translation("events", localedir=locale_dir, fallback=True, languages=[locale])
   i18n.install()
   return i18n.gettext

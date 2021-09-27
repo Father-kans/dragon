@@ -109,14 +109,14 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     wideRoadCameraError @102;
     localizerMalfunction @103;
     #Autohold Activate
-    autoHoldActivated @117;
+    autoHoldActivated @116;
 
     #Enable greyPanda
-    startupGreyPanda @118;
+    startupGreyPanda @117;
 
     #Road speed Limiter
-    slowingDownSpeed @119;
-    slowingDownSpeedSound @120;
+    slowingDownSpeed @118;
+    slowingDownSpeedSound @119;
 
 
     highCpuUsage @105;
@@ -143,21 +143,20 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     startupOneplusDEPRECATED @82;
 
     #dp
-    preLaneChangeLeftALC @106;
-    preLaneChangeRightALC @107;
-    manualSteeringRequired @108;
-    manualSteeringRequiredBlinkersOn @109;
-    leadCarMoving @110;
+    autoLaneChange @106;
+    manualSteeringRequired @107;
+    manualSteeringRequiredBlinkersOn @108;
+    leadCarMoving @109;
 
     # timebomb assist
-    timebombWarn @111;
-    timebombBypassing @112;
-    timebombBypassed @113;
-    mapdAlert @114;
+    timebombWarn @110;
+    timebombBypassing @111;
+    timebombBypassed @112;
+    mapdAlert @113;
 
     #mapd
-    speedLimitActive @115;
-    speedLimitValueChange @116;
+    speedLimitActive @114;
+    speedLimitValueChange @115;
   }
 }
 
@@ -429,7 +428,7 @@ struct CarParams {
   enableBsm @56 :Bool;       # blind spot monitoring
   hasStockCamera @57 :Bool;  # factory LKAS/LDW camera is present
   # Autohold
-  enableAutoHold @60 :Bool;
+  enableAutoHold @59 :Bool;
 
   minEnableSpeed @7 :Float32;
   minSteerSpeed @8 :Float32;
@@ -491,7 +490,6 @@ struct CarParams {
   communityFeature @46: Bool;  # true if a community maintained feature is detected
   fingerprintSource @49: FingerprintSource;
   networkLocation @50 :NetworkLocation;  # Where Panda/C2 is integrated into the car's CAN network
-  hasZss @59: Bool; # true if ZSS is detected
 
   struct LateralParams {
     torqueBP @0 :List(Int32);

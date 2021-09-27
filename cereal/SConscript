@@ -1,4 +1,4 @@
-Import('env', 'envCython', 'arch', 'common', 'zmq')
+Import('env', 'envCython', 'arch', 'common')
 
 import shutil
 

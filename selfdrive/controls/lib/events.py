@@ -241,12 +241,11 @@ def joystick_alert(CP: car.CarParams, sm: messaging.SubMaster, metric: bool) -> 
     Priority.LOW, VisualAlert.none, AudibleAlert.none, 0., 0., .1)
 
 def alca_alert(CP: car.CarParams, sm: messaging.SubMaster, metric: bool) -> Alert:
-  alc_timer = sm['lateralPlan'].autoLaneChangeTimer
   return Alert(
-    _("Auto Lane Change starts in %d secs") % alc_timer,
+    _("Auto Lane Change starts in %.1f secs") % float(sm['lateralPlan'].dpALCAStartIn),
     _("Monitor Other Vehicles"),
     AlertStatus.normal, AlertSize.mid,
-    Priority.LOWER, VisualAlert.steerRequired, AudibleAlert.none, 0., .1, .1, alert_rate=0.75)
+    Priority.LOW, VisualAlert.steerRequired, AudibleAlert.chimeWarning2, 1., .1, .1, alert_rate=0.75)
 
 
 EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, bool], Alert]]]] = {
@@ -925,20 +924,8 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
   },
 
   # dp
-  EventName.preLaneChangeLeftALC: {
-    ET.WARNING: Alert(
-      _("Left ALC will start in 3s"),
-      _("Monitor Other Vehicles"),
-      AlertStatus.normal, AlertSize.mid,
-      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.chimeWarning2, 1., .1, .1, alert_rate=0.75),
-  },
-
-  EventName.preLaneChangeRightALC: {
-    ET.WARNING: Alert(
-      _("Right ALC will start in 3s"),
-      _("Monitor Other Vehicles"),
-      AlertStatus.normal, AlertSize.mid,
-      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.chimeWarning2, 1., .1, .1, alert_rate=0.75),
+  EventName.autoLaneChange: {
+    ET.WARNING: alca_alert,
   },
 
   EventName.manualSteeringRequired: {

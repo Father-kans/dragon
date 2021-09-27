@@ -63,7 +63,7 @@ services = {
   "uploaderState": (True, 0., 1),
 
   #mapd
-  "liveMapData": (True, 0.),
+  "liveMapData": (False, 0.),
 
   # debug
   "testJoystick": (False, 0.),

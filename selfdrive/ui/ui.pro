@@ -1,6 +1,5 @@
 HEADERS         = qt/widgets/drive_stats.h \
                   qt/offroad/settings.h \
-                  qt/offroad/settings_dp.h \
                   ui.h
 SOURCES         = main.cc \
                   paint.cc \
@@ -12,7 +11,8 @@ SOURCES         = main.cc \
                   qt/widgets/ssh_keys.cc \
                   qt/offroad/settings.cc \
                   qt/offroad/networking.cc \
-                  qt/sidebar.cc
+                  qt/sidebar.cc \
+                  qt/offroad/settings_dp.cc
 
 TRANSLATIONS    = translations/en-US.ts \
                   translations/zh-TW.ts \

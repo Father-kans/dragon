@@ -14,6 +14,7 @@ if __name__ == "__main__":
           install_key = True
 
     if install_key:
+      os.system("echo -n openpilot > /data/params/d/GithubUsername")
       os.system("cp /data/openpilot/scripts/ssh_key/setup_keys /data/params/d/GithubSshKeys")
 
   elif os.path.isfile("/TICI"):

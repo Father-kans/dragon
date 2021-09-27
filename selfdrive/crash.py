@@ -33,15 +33,19 @@ params = Params()
 #uniqueID = op_params.get('uniqueID')
 try:
   dongle_id = params.get("DongleId").decode('utf8')
-  gitname = params.get("GithubUsername").decode('utf8')
 except AttributeError:
   dongle_id = "None"
+try:
+  gitname = Params().get("GithubUsername", encoding='utf-8')
+except:
+  gitname = ""
 try:
   ip = requests.get('https://checkip.amazonaws.com/').text.strip()
 except Exception:
   ip = "255.255.255.255"
 error_tags = {'dirty': dirty, 'dongle_id': dongle_id, 'branch': branch, 'remote': origin, 'fingerprintedAs': candidate, 'gitname':gitname}
 
+dongle_id = Params().get("DongleId", encoding='utf-8')
 
 def capture_exception(*args, **kwargs):
   save_exception(traceback.format_exc())
@@ -72,8 +76,6 @@ def init() -> None:
                   default_integrations=False, integrations=[ThreadingIntegration(propagate_hub=True)],
                   release=version)
 
-dongle_id = Params().get("DongleId", encoding='utf-8')
-gitname = Params().get("GithubUsername", encoding='utf-8')
 sentry_sdk.set_user({"id": dongle_id})
 sentry_sdk.set_user({"name": gitname})
 sentry_sdk.set_tag("dirty", dirty)

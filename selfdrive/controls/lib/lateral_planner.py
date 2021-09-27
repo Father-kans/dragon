@@ -69,11 +69,11 @@ class LateralPlanner():
     self.d_path_w_lines_xyz = np.zeros((TRAJECTORY_SIZE, 3))
 
     # dp
-    self.dp_lc_auto_allowed = False
-    self.dp_lc_auto_timer = None
-    self.dp_lc_auto_delay = 2.
-    self.dp_lc_auto_cont = False
-    self.dp_lc_auto_completed = False
+    self.dp_torque_apply_length = 1.5 # secs of torque we apply for
+    self.dp_lc_auto_start = 0. # time to start alc
+    self.dp_lc_auto_start_in = 0. # remaining time to start alc
+    self.dp_lc_auto_torque_end = 0. # time to end applying torque
+    self.dp_torque_apply = False # should we apply torque?
 
     self.laneless_mode = 2 # AUTO
     self.laneless_mode_status = False
@@ -120,24 +120,34 @@ class LateralPlanner():
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
     else:
+      reset = False
+      if one_blinker:
+        cur_time = sec_since_boot()
+        # reach auto lc condition
+        if not below_lane_change_speed and sm['dragonConf'].dpLateralMode == 2 and v_ego >= (sm['dragonConf'].dpLcAutoMinMph * CV.MPH_TO_MS):
+          # work out alc start time and torque apply end time
+          if self.dp_lc_auto_start == 0.:
+            self.dp_lc_auto_start = cur_time + sm['dragonConf'].dpLcAutoDelay
+            self.dp_lc_auto_torque_end = self.dp_lc_auto_start + self.dp_torque_apply_length
+          else:
+            # work out how long til alc start
+            # for display only
+            self.dp_lc_auto_start_in = self.dp_lc_auto_start - cur_time
+            self.dp_torque_apply = True if self.dp_lc_auto_start < cur_time <= self.dp_lc_auto_torque_end else False
+      else:
+        reset = True
+
+      # reset all vals
+      if not active or reset:
+        self.dp_lc_auto_start = 0.
+        self.dp_lc_auto_start_in = 0.
+        self.dp_lc_auto_torque_end = 0.
+        self.dp_torque_apply = False
+
       # LaneChangeState.off
       if self.lane_change_state == LaneChangeState.off and one_blinker and not self.prev_one_blinker and not below_lane_change_speed:
         self.lane_change_state = LaneChangeState.preLaneChange
         self.lane_change_ll_prob = 1.0
-
-      # dp alc
-      cur_time = sec_since_boot()
-      if not below_lane_change_speed and sm['dragonConf'].dpLateralMode == 2 and v_ego >= (sm['dragonConf'].dpLcAutoMinMph * CV.MPH_TO_MS):
-        # we allow auto lc when speed reached dragon_auto_lc_min_mph
-        self.dp_lc_auto_allowed = True
-      else:
-        # if too slow, we reset all the variables
-        self.dp_lc_auto_allowed = False
-        self.dp_lc_auto_timer = None
-
-      # disable auto lc when continuous is off and already did auto lc once
-      if self.dp_lc_auto_allowed and not sm['dragonConf'].dpLcAutoCont and self.dp_lc_auto_completed:
-        self.dp_lc_auto_allowed = False
 
       # LaneChangeState.preLaneChange
       elif self.lane_change_state == LaneChangeState.preLaneChange:
@@ -156,19 +166,9 @@ class LateralPlanner():
         blindspot_detected = ((sm['carState'].leftBlindspot and self.lane_change_direction == LaneChangeDirection.left) or
                               (sm['carState'].rightBlindspot and self.lane_change_direction == LaneChangeDirection.right))
 
-        # dp alc
-        if self.dp_lc_auto_allowed:
-          if self.dp_lc_auto_timer is None:
-            self.dp_lc_auto_timer = cur_time + sm['dragonConf'].dpLcAutoDelay
-          elif cur_time >= self.dp_lc_auto_timer:
-            # if timer is up, we set torque_applied to True to fake user input
-            torque_applied = True
-            self.dp_lc_auto_completed = True
-
-        # we reset the timers when torque is applied regardless
-        if torque_applied and not blindspot_detected:
-          self.dp_lc_auto_timer = None
-
+        # if human made lane change prior alca, we should stop alca until new blinker (off -> on)
+        self.dp_lc_auto_start = self.dp_lc_auto_torque_end if torque_applied else self.dp_lc_auto_start
+        torque_applied = self.dp_torque_apply if self.dp_torque_apply else torque_applied
         if not one_blinker or below_lane_change_speed:
           self.lane_change_state = LaneChangeState.off
         elif torque_applied and not blindspot_detected:
@@ -193,16 +193,10 @@ class LateralPlanner():
         elif self.lane_change_ll_prob > 0.99:
           self.lane_change_state = LaneChangeState.off
 
-        # dp when finishing, we reset timer to none.
-        self.dp_lc_auto_timer = None
-
     if self.lane_change_state in [LaneChangeState.off, LaneChangeState.preLaneChange]:
       self.lane_change_timer = 0.0
     else:
       self.lane_change_timer += DT_MDL
-
-    if self.prev_one_blinker and not one_blinker:
-      self.dp_lc_auto_completed = False
 
     self.prev_one_blinker = one_blinker
 
@@ -319,7 +313,7 @@ class LateralPlanner():
     plan_send.lateralPlan.desire = self.desire
     plan_send.lateralPlan.laneChangeState = self.lane_change_state
     plan_send.lateralPlan.laneChangeDirection = self.lane_change_direction
-    plan_send.lateralPlan.dpALCAllowed = self.dp_lc_auto_allowed
+    plan_send.lateralPlan.dpALCAStartIn = self.dp_lc_auto_start_in
 
     plan_send.lateralPlan.dPathWLinesX = [float(x) for x in self.d_path_w_lines_xyz[:, 0]]
     plan_send.lateralPlan.dPathWLinesY = [float(y) for y in self.d_path_w_lines_xyz[:, 1]]

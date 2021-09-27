@@ -9,7 +9,6 @@ from common.params import Params, put_nonblocking
 import os
 from selfdrive.hardware import HARDWARE
 params = Params()
-from common.i18n import get_locale
 from common.dp_common import param_get, get_last_modified
 from common.dp_time import LAST_MODIFIED_SYSTEMD
 from selfdrive.dragonpilot.dashcamd import Dashcamd
@@ -17,6 +16,8 @@ from selfdrive.dragonpilot.appd import Appd
 from selfdrive.hardware import EON
 import socket
 from common.realtime import Ratekeeper
+import threading
+from selfdrive.dragonpilot.gpx_uploader import gpx_uploader_thread
 
 PARAM_PATH = params.get_params_path() + '/d/'
 
@@ -43,8 +44,13 @@ def confd_thread():
   appd = Appd()
   is_eon = EON
   rk = Ratekeeper(HERTZ, print_delay_threshold=None)  # Keeps rate at 2 hz
+  uploader_thread = None
 
   while True:
+    if uploader_thread is None:
+      uploader_thread = threading.Thread(target=gpx_uploader_thread)
+      uploader_thread.start()
+
     msg = messaging.new_message('dragonConf')
     if last_dp_msg is not None:
       msg.dragonConf = last_dp_msg
@@ -101,9 +107,7 @@ def confd_thread():
     ===================================================
     '''
     if frame == 0:
-      locale = get_locale()
-      setattr(msg.dragonConf, get_struct_name('dp_locale'), locale)
-      put_nonblocking('dp_locale', locale)
+      setattr(msg.dragonConf, get_struct_name('dp_locale'), params.get("dp_locale"))
       # mirror EndToEndToggle to dp_lane_less_model_ctrl first time, after all
       put_nonblocking('dp_lane_less_mode_ctrl', params.get('EndToEndToggle'))
     '''

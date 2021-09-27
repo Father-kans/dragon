@@ -266,11 +266,13 @@ class Controls:
       if (CS.leftBlindspot and direction == LaneChangeDirection.left) or \
          (CS.rightBlindspot and direction == LaneChangeDirection.right):
         self.events.add(EventName.laneChangeBlocked)
+      elif self.sm['lateralPlan'].dpALCAStartIn > 0:
+        self.events.add(EventName.autoLaneChange)
       else:
         if direction == LaneChangeDirection.left:
-          self.events.add(EventName.preLaneChangeLeftALC if self.sm['lateralPlan'].dpALCAllowed else EventName.preLaneChangeLeft)
+          self.events.add(EventName.preLaneChangeLeft)
         else:
-          self.events.add(EventName.preLaneChangeRightALC if self.sm['lateralPlan'].dpALCAllowed else EventName.preLaneChangeRight)
+          self.events.add(EventName.preLaneChangeRight)
     elif self.sm['lateralPlan'].laneChangeState in [LaneChangeState.laneChangeStarting,
                                                  LaneChangeState.laneChangeFinishing]:
       self.events.add(EventName.laneChange)

@@ -82,22 +82,22 @@ fi
 
 source "$BASEDIR/launch_env.sh"
 
-if ! $(grep -q "letv" /proc/cmdline); then
-  mount -o remount,rw /system
-  sed -i -e 's#/dev/input/event1#/dev/input/event2#g' ~/.bash_profile
-  touch /ONEPLUS
-  mount -o remount,r /system
-fi
-
-
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 function two_init {
-  if [ -f "/sdcard/dp_patcher.py" ]; then
-    /data/data/com.termux/files/usr/bin/python /sdcard/dp_patcher.py
+  python /data/openpilot/scripts/installers/language_installer.py
+  python /data/openpilot/scripts/installers/sshkey_installer.py
+  python /data/openpilot/scripts/installers/font_installer.py
+  mount -o remount,rw /system
+  if [ ! -f /ONEPLUS ] && ! $(grep -q "letv" /proc/cmdline); then
+    sed -i -e 's#/dev/input/event1#/dev/input/event2#g' ~/.bash_profile
+    touch /ONEPLUS
+  else
+    if [ ! -f /LEECO ]; then
+      touch /LEECO
+    fi
   fi
-  /data/data/com.termux/files/usr/bin/python /data/openpilot/scripts/installers/font_installer.py
-  /data/data/com.termux/files/usr/bin/python /data/openpilot/scripts/installers/sshkey_installer.py
+  mount -o remount,r /system
 
   # set IO scheduler
   setprop sys.io.scheduler noop
@@ -105,8 +105,8 @@ function two_init {
     echo noop > $f
   done
 
-
   # *** shield cores 2-3 ***
+
   # TODO: should we enable this?
   # offline cores 2-3 to force recurring timers onto the other cores
   #echo 0 > /sys/devices/system/cpu/cpu2/online
@@ -155,7 +155,9 @@ function two_init {
 
   # USB traffic needs realtime handling on cpu 3
   [ -d "/proc/irq/733" ] && echo 3 > /proc/irq/733/smp_affinity_list
-  [ -d "/proc/irq/736" ] && echo 3 > /proc/irq/736/smp_affinity_list # USB for OP3T
+  if [ -f /ONEPLUS ]; then
+    [ -d "/proc/irq/736" ] && echo 3 > /proc/irq/736/smp_affinity_list # USB for OP3T
+  fi
 
   # GPU and camera get cpu 2
   CAM_IRQS="177 178 179 180 181 182 183 184 185 186 192"
@@ -179,7 +181,7 @@ function two_init {
   wpa_cli IFNAME=wlan0 SCAN
 
   # Check for NEOS update
-  if $(grep -q "letv" /proc/cmdline); then
+  if [ -f /LEECO ]; then
     if [ $(< /VERSION) != "$REQUIRED_NEOS_VERSION" ]; then
       if [ -f "$DIR/scripts/continue.sh" ]; then
         cp "$DIR/scripts/continue.sh" "/data/data/com.termux/files/continue.sh"
@@ -200,7 +202,7 @@ function two_init {
   # Remove and regenerate qcom sensor registry. Only done on OP3T mainboards.
   # Performed exactly once. The old registry is preserved just-in-case, and
   # doubles as a flag denoting we've already done the reset.
-  if ! $(grep -q "letv" /proc/cmdline) && [ ! -f "/persist/comma/op3t-sns-reg-backup" ]; then
+  if [ -f /ONEPLUS ] && [ ! -f "/persist/comma/op3t-sns-reg-backup" ]; then
     echo "Performing OP3T sensor registry reset"
     mv /persist/sensors/sns.reg /persist/comma/op3t-sns-reg-backup &&
       rm -f /persist/sensors/sensors_settings /persist/sensors/error_log /persist/sensors/gyro_sensitity_cal &&
@@ -215,10 +217,15 @@ function tici_init {
     sleep 3
   fi
 
+  # setup governors
   sudo su -c 'echo "performance" > /sys/class/devfreq/soc:qcom,memlat-cpu0/governor'
   sudo su -c 'echo "performance" > /sys/class/devfreq/soc:qcom,memlat-cpu4/governor'
+
+  # TODO: move this to agnos
+  # network manager config
   nmcli connection modify --temporary lte gsm.auto-config yes
   nmcli connection modify --temporary lte gsm.home-only yes
+  sudo rm -f /data/etc/NetworkManager/system-connections/*.nmmeta
 
   # set success flag for current boot slot
   sudo abctl --set_success
@@ -288,6 +295,10 @@ function launch {
   # dp - ignore chmod changes
   git -C $DIR config core.fileMode false
 
+  # dp - apply custom patch
+  if [ -f "/data/media/0/dp_patcher.py" ]; then
+    python /data/media/0/dp_patcher.py
+  fi
   # hardware specific init
   if [ -f /EON ]; then
     two_init

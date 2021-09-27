@@ -48,7 +48,7 @@ def common_interface_get_params_lqr(ret):
 
 def get_last_modified(delay, old_check, old_modified):
   new_check = sec_since_boot()
-  if old_check is None or new_check - old_check >= delay:
+  if os.path.isfile(LAST_MODIFIED) and old_check is None or new_check - old_check >= delay:
     return new_check, os.stat(LAST_MODIFIED).st_mtime
   else:
     return old_check, old_modified
